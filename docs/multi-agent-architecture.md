@@ -16,7 +16,7 @@ The architecture should allow new agents and skills to be added without redesign
 
 ---
 
-# 2. High-Level Architecture
+## 2. High-Level Architecture
 
 ```text
                          ┌─────────────────────┐
@@ -43,22 +43,22 @@ The architecture should allow new agents and skills to be added without redesign
                          │ Resolves conflicts  │
                          └──────────┬──────────┘
                                     │
-          ┌───────────────┬─────────┼─────────┬───────────────┐
-          │               │         │         │               │
-          ▼               ▼         ▼         ▼               ▼
-     ┌─────────┐     ┌─────────┐ ┌───────┐ ┌─────────┐ ┌─────────┐
-     │ UX/UI   │     │Frontend │ │Backend│ │Backend  │ │  SRE    │
-     │ Agent   │     │ Agent   │ │ JS    │ │ PHP     │ │  Agent  │
-     └────┬────┘     └────┬────┘ └───┬───┘ └────┬────┘ └────┬────┘
-          │               │           │           │           │
-          └───────────────┴───────────┴───────────┴───────────┘
-                                      │
-                                      ▼
-                               ┌────────────┐
-                               │  QA Agent  │
-                               │ Browser /  │
-                               │ E2E / Test │
-                               └────────────┘
+          ┌─────────────┬───────────┼───────────┬─────────────┬─────────────┐
+          │             │           │           │             │             │
+          ▼             ▼           ▼           ▼             ▼             ▼
+     ┌─────────┐   ┌─────────┐ ┌─────────┐ ┌─────────┐   ┌─────────┐   ┌─────────┐
+     │ UX/UI   │   │Frontend │ │ Backend │ │Backend  │   │  SRE    │   │  Data   │
+     │ Agent   │   │ Agent   │ │ JS      │ │ PHP     │   │  Agent  │   │  Agent  │
+     └────┬────┘   └────┬────┘ └────┬────┘ └────┬────┘   └────┬────┘   └────┬────┘
+          │             │           │           │             │             │
+          └─────────────┴───────────┴───────────┴─────────────┴─────────────┘
+                                    │
+                                    ▼
+                              ┌────────────┐
+                              │  QA Agent  │
+                              │ Browser /  │
+                              │ E2E / Test │
+                              └────────────┘
 ```
 
 A refined architecture is:
@@ -83,30 +83,60 @@ A refined architecture is:
                     │ ORCHESTRATOR  │
                     └───────┬───────┘
                             │
-        ┌───────────────────┼────────────────────┐
-        │                   │                    │
-        ▼                   ▼                    ▼
-       UX                ENGINEERING            QA
-        │                   │                    │
-        │          ┌────────┼─────────┐          │
-        │          │        │         │          │
-        │          ▼        ▼         ▼          │
-        │       Frontend   Backend    SRE         │
-        │                    │                    │
-        │               ┌────┴────┐               │
-        │               ▼         ▼               │
-        │              JS        PHP              │
-        │                                          │
-        └──────────────────┬───────────────────────┘
-                           ▼
-                       PRODUCT
+      ┌─────────┼───────────┼─────────────────────────┐
+      │         │           │                         │
+      ▼         ▼           ▼                         ▼
+      UX         DATA     ENGINEERING                 QA
+      │         │           │                         │
+      │         │   ┌───────┼────────┐                │
+      │         │   │       │        │                │
+      │         │   ▼       ▼        ▼                │
+      │         │ Frontend Backend  SRE               │
+      │         │           │                         │
+      │         │      ┌────┴────┐                    │
+      │         │      ▼         ▼                    │
+      │         │      JS       PHP                   │
+      │         │                                     │
+      └─────────┴───────────┬─────────────────────────┘
+                            ▼
+                        PRODUCT
 ```
 
 ---
 
-# 3. Agents
+### Minimum Viable Team
 
-## 3.1 Agent Partner
+Ten agents is the end state, not the starting point. Each additional agent adds token cost and handoff latency. Start with a lean team and grow it as the project demands:
+
+```text
+MVP Team
+ ├── Partner         (product direction)
+ ├── Architect       (technical plans, non-optional)
+ ├── Orchestrator    (planning + delegation + state)
+ ├── Engineer        (frontend + backend implementation)
+ └── QA              (independent verification)
+```
+
+Growth path (add an agent only when it stops being optional):
+
+```text
+Partner, Architect, Orchestrator, Engineer, QA
+   ↓  split Engineer → Frontend + Backend
+   ↓  add SRE (infrastructure)
+   ↓  add Data (schema / migrations)
+   ↓  add Security (independent review)
+   ↓  add Documentation (knowledge sync)
+```
+
+The Architect is the one exception to the growth rule: technical planning is a trust boundary from day one, so it ships with the MVP team and sits directly above the Orchestrator.
+
+Rule: **do not add an agent until a single agent has demonstrated it is a bottleneck or a trust boundary.**
+
+---
+
+## 3. Agents
+
+### 3.1 Agent Partner
 
 The **Agent Partner** is the primary human-facing agent.
 
@@ -149,64 +179,7 @@ The Partner is the **main human-facing interface**.
 
 ---
 
-## 3.2 Data / Database Agent
-
-The **Data Agent** owns everything related to persistent data. Without an explicit owner, schema design, migrations, and seed data fall between the backend agents — exactly the kind of fragmentation this architecture tries to avoid.
-
-### Responsibilities
-
-```text
-Database schema design
-Migrations
-Seed / fixture data
-Data modeling (entities, relations)
-Indexes and query performance
-Referential integrity
-Data validation rules at rest
-Backup/restore of application data (with SRE)
-```
-
-### Principle
-
-Backend agents propose data requirements; the Data Agent owns the schema and the migration lifecycle.
-
-> Backend PHP: "Users need a `profiles` table with a unique email."
-
-> Data Agent: "I'll add the migration and the model mapping."
-
-The Data Agent does not own infrastructure (that is SRE) and does not implement business logic (that is the backend agents). It is the single source of truth for the data layer.
-
----
-
-## 3.3 Minimum Viable Team
-
-Ten agents is the end state, not the starting point. Each additional agent adds token cost and handoff latency. Start with a lean team and grow it as the project demands:
-
-```text
-MVP Team
- ├── Partner         (product direction)
- ├── Orchestrator    (planning + delegation + state)
- ├── Engineer        (frontend + backend implementation)
- └── QA              (independent verification)
-```
-
-Growth path (add an agent only when it stops being optional):
-
-```text
-Partner, Orchestrator, Engineer, QA
-   ↓  split Engineer → Frontend + Backend
-   ↓  add Architect (technical plans)
-   ↓  add SRE (infrastructure)
-   ↓  add Data (schema / migrations)
-   ↓  add Security (independent review)
-   ↓  add Documentation (knowledge sync)
-```
-
-Rule: **do not add an agent until a single agent has demonstrated it is a bottleneck or a trust boundary.**
-
----
-
-# 4. Architect Agent
+### 3.2. Architect Agent
 
 An additional agent proposed during the discussion is the **Architect Agent**.
 
@@ -299,7 +272,47 @@ Neither agent may unilaterally change a decision the other has already signed of
 
 ---
 
-# 5. SRE / DevOps Agent
+### 3.3. Orchestrator Agent
+
+The **Orchestrator Agent** is the workflow coordinator of the team. It is the agent that plans, assigns, and tracks work across all specialists — and the one that merges the results back together.
+
+It does **not** need to be the most intelligent agent, and it does **not** implement features itself.
+
+### Responsibilities
+
+* Understand the current project state
+* Select the appropriate specialist for a task
+* Create and assign narrowly scoped tasks
+* Give each specialist the necessary context
+* Collect results and update project state
+* Send failures back to the responsible agent
+* Manage the dependency-aware backlog
+* Resolve conflicts between agents
+* Verify the Definition of Done before closing a task
+* Escalate important decisions to the human
+* Recover in-flight work after a crash (idempotent restart)
+
+### Example
+
+> Architect: "PROJECT-001: Create the authentication system."
+
+Orchestrator:
+
+```text
+1. Check dependencies — the SRE dev environment must be done first
+2. Dispatch PROJECT-001 to the Backend JS Agent
+3. Dispatch PROJECT-003 (login UI) to the Frontend Agent
+4. Collect results and update task state
+5. Dispatch QA E2E-001 (authentication flow)
+6. Review diffs and merge approved branches to main
+7. Mark tasks DONE, or send failures back for rework
+```
+
+The Orchestrator's full behavior — backlog, escalation, and crash recovery — is described in §8.
+
+---
+
+### 3.4 SRE / DevOps Agent
 
 The **SRE Agent** owns infrastructure and deployment concerns.
 
@@ -355,7 +368,80 @@ Rules:
 
 ---
 
-# 6. Backend JS Agent
+### 3.5 Data / Database Agent
+
+The **Data Agent** owns everything related to persistent data. Without an explicit owner, schema design, migrations, and seed data fall between the backend agents — exactly the kind of fragmentation this architecture tries to avoid.
+
+### Responsibilities
+
+```text
+Database schema design
+Migrations
+Seed / fixture data
+Data modeling (entities, relations)
+Indexes and query performance
+Referential integrity
+Data validation rules at rest
+Backup/restore of application data (with SRE)
+```
+
+### Principle
+
+Backend agents propose data requirements; the Data Agent owns the schema and the migration lifecycle.
+
+> Backend PHP: "Users need a `profiles` table with a unique email."
+
+> Data Agent: "I'll add the migration and the model mapping."
+
+The Data Agent does not own infrastructure (that is SRE) and does not implement business logic (that is the backend agents). It is the single source of truth for the data layer.
+
+---
+
+### 3.6. UX Agent
+
+The **UX/UI Agent** owns product interaction and visual design.
+
+### Technologies / Tools / Skills
+
+```text
+Figma
+Wireframes
+Design systems
+Components
+User flows
+Information architecture
+Visual hierarchy
+Responsive layouts
+Accessibility
+```
+
+Its outputs do not necessarily need to be code.
+
+Example workflow:
+
+```text
+Requirement
+    ↓
+UX Agent
+    ↓
+User flow
+    ↓
+Wireframe
+    ↓
+Visual design
+    ↓
+Design specification
+    ↓
+Frontend Agent
+```
+
+The UX/UI Agent defines what users should experience.
+
+The Frontend Agent implements it.
+
+---
+
+### 3.7. Backend JS Agent
 
 The **Backend JS Agent** owns server-side JavaScript and TypeScript implementation.
 
@@ -401,7 +487,7 @@ The Backend JS Agent should not normally modify Docker infrastructure unless exp
 
 ---
 
-# 7. Backend PHP Agent
+### 3.8. Backend PHP Agent
 
 The **Backend PHP Agent** owns PHP application development.
 
@@ -435,11 +521,11 @@ Backend Go Agent
 Backend Rust Agent
 ```
 
-The Data Agent owns schema, migrations, and seed data (§3.2). Backend agents implement business logic against the schema but coordinate any schema change through the Data Agent rather than modifying migrations directly.
+The Data Agent owns schema, migrations, and seed data (§3.5). Backend agents implement business logic against the schema but coordinate any schema change through the Data Agent rather than modifying migrations directly.
 
 ---
 
-# 8. Frontend Agent
+### 3.9. Frontend Agent
 
 The **Frontend Agent** owns frontend implementation.
 
@@ -484,51 +570,7 @@ This creates a clean division.
 
 ---
 
-# 9. UX/UI Agent
-
-The **UX/UI Agent** owns product interaction and visual design.
-
-### Technologies / Tools / Skills
-
-```text
-Figma
-Wireframes
-Design systems
-Components
-User flows
-Information architecture
-Visual hierarchy
-Responsive layouts
-Accessibility
-```
-
-Its outputs do not necessarily need to be code.
-
-Example workflow:
-
-```text
-Requirement
-    ↓
-UX Agent
-    ↓
-User flow
-    ↓
-Wireframe
-    ↓
-Visual design
-    ↓
-Design specification
-    ↓
-Frontend Agent
-```
-
-The UX/UI Agent defines what users should experience.
-
-The Frontend Agent implements it.
-
----
-
-# 10. QA Agent
+### 3.10. QA Agent
 
 The **QA Agent** is responsible for independent verification.
 
@@ -608,7 +650,7 @@ The responsible implementation agent then fixes the problem.
 
 ---
 
-# 11. Security Agent
+### 3.11. Security Agent
 
 A Security Agent was also proposed as a useful additional specialization.
 
@@ -636,7 +678,7 @@ This provides an independent security verification layer.
 
 ---
 
-# 12. Documentation Agent
+### 3.12. Documentation Agent
 
 A Documentation Agent can own project knowledge that must remain synchronized with the implementation.
 
@@ -656,7 +698,7 @@ The Documentation Agent observes the work performed by other agents and updates 
 
 ---
 
-# 13. Agent vs. Skill
+## 4. Agent vs. Skill
 
 An important architectural refinement is to distinguish between:
 
@@ -710,7 +752,7 @@ Agents can still remain distinct when they require different:
 
 ---
 
-# 14. Shared Project Knowledge
+## 5. Shared Project Knowledge
 
 Agents should not primarily communicate through huge conversational exchanges.
 
@@ -767,7 +809,7 @@ fix
 
 This is preferable to passing large conversation histories from one agent to another.
 
-### Versioned Artifacts and State Consistency
+## 6. Versioned Artifacts and State Consistency
 
 Because artifacts are the primary communication channel, keep them consistent:
 
@@ -777,7 +819,7 @@ Because artifacts are the primary communication channel, keep them consistent:
 
 ---
 
-# 15. Agent-Specific Constitutions and Skills
+## 7. Agent-Specific Constitutions and Skills
 
 Each agent should have its own instructions and capabilities.
 
@@ -800,6 +842,14 @@ agents/
 │       ├── system-design/
 │       └── task-decomposition/
 │
+├── orchestrator/
+│   ├── AGENT.md
+│   └── skills/
+│       ├── workflow/
+│       ├── task-decomposition/
+│       ├── backlog-management/
+│       └── escalation/
+│
 ├── sre/
 │   ├── AGENT.md
 │   └── skills/
@@ -807,6 +857,14 @@ agents/
 │       ├── github-actions/
 │       ├── nginx/
 │       └── deployment/
+│
+├── data/
+│   ├── AGENT.md
+│   └── skills/
+│       ├── schema-design/
+│       ├── migrations/
+│       ├── seed-data/
+│       └── query-optimization/
 │
 ├── backend-js/
 │   ├── AGENT.md
@@ -866,7 +924,7 @@ This gives the overall system a **plugin-like architecture**.
 
 ---
 
-# 16. The Orchestrator
+## 8. The Orchestrator
 
 The **Orchestrator** is the key component.
 
@@ -910,12 +968,12 @@ Conceptually:
                          │ Manage workflow     │
                          └──────────┬──────────┘
                                     │
-       ┌───────────────┬────────────┼───────────────┐
-       │               │            │               │
-       ▼               ▼            ▼               ▼
-      UX          Frontend      Backend JS      Backend PHP
-       │               │            │               │
-       └───────────────┴────────────┴───────────────┘
+       ┌───────────────┬────────────┼───────────────┬───────────────┐
+       │               │            │               │               │
+       ▼               ▼            ▼               ▼               ▼
+      UX          Frontend      Backend JS      Backend PHP         DATA
+       │               │            │               │               │
+       └───────────────┴────────────┴───────────────┴───────────────┘
                                     │
                                     ▼
                                    SRE
@@ -968,7 +1026,7 @@ State lives on disk (see Project State), so a crash should not lose work:
 
 ---
 
-# 17. Project State
+## 9. Project State
 
 The system should maintain explicit task/project state instead of relying only on conversation context.
 
@@ -1042,7 +1100,7 @@ When a budget is exhausted the task moves to `FAILED` with a report, and the Orc
 
 ---
 
-# 18. Agent Communication
+## 10. Agent Communication
 
 Agents should communicate primarily through:
 
@@ -1083,7 +1141,7 @@ Technical tasks
 
 ---
 
-# 19. Separation of Responsibilities
+## 11. Separation of Responsibilities
 
 A core principle is that agents should have **isolated responsibilities**.
 
@@ -1133,7 +1191,7 @@ This separation helps prevent one agent from becoming an uncontrolled "do everyt
 
 ---
 
-# 20. QA Feedback Loop
+## 12. QA Feedback Loop
 
 The QA feedback loop is especially important.
 
@@ -1170,7 +1228,7 @@ The same model should not be the only authority evaluating its own implementatio
 
 ---
 
-# 21. Docker / SRE Feedback Loop
+## 13. Docker / SRE Feedback Loop
 
 The infrastructure workflow can similarly be automated:
 
@@ -1204,7 +1262,7 @@ This creates an iterative engineering environment rather than simple code genera
 
 ---
 
-# 22. Git as a Safety Boundary
+## 14. Git as a Safety Boundary
 
 Git should provide a strong boundary around autonomous changes.
 
@@ -1268,7 +1326,7 @@ Whoever merges is responsible for conflict resolution. When parallel agents touc
 
 ---
 
-# 23. One Important Architectural Principle
+## 15. One Important Architectural Principle
 
 The system should be designed around:
 
@@ -1296,7 +1354,7 @@ This gives the system a clean set of abstractions.
 
 ---
 
-# 24. Meta-Observability & Learning Loop
+## 16. Meta-Observability & Learning Loop
 
 The team that monitors the product should also monitor itself. Track per-agent operational metrics so a weak agent is visible before it wastes the whole project:
 
@@ -1323,7 +1381,7 @@ Without this loop the same failure class recurs indefinitely; with it, the team 
 
 ---
 
-# 25. Anti-Patterns
+## 17. Anti-Patterns
 
 This architecture is not the right tool for every job. Recognize when the overhead of a multi-agent team is a net loss:
 
@@ -1349,7 +1407,7 @@ When these signals appear, collapse to fewer agents or handle the work in a sing
 
 ---
 
-# 26. Example Agent Ecosystem
+## 18. Example Agent Ecosystem
 
 A possible final ecosystem:
 
@@ -1370,21 +1428,28 @@ A possible final ecosystem:
                     │ Technical Plan  │
                     └────────┬────────┘
                              │
-          ┌──────────────────┼───────────────────┐
-          │                  │                   │
-          ▼                  ▼                   ▼
-      ┌───────┐         ┌──────────┐         ┌─────┐
-      │  UX   │         │Frontend  │         │ SRE │
-      └───┬───┘         └────┬─────┘         └──┬──┘
-          │                  │                   │
-          │                  │                   ▼
-          │                  │                Docker
-          │                  │                   │
-          │             ┌────┴─────┐             │
-          │             ▼          ▼             │
-          │        Backend JS   Backend PHP      │
-          │             │          │             │
-          └─────────────┴──────────┴─────────────┘
+                             ▼
+                    ┌─────────────────┐
+                    │  ORCHESTRATOR   │
+                    │  Delegation/    │
+                    │  Workflow state │
+                    └────────┬────────┘
+                             │
+          ┌──────────────────┼───────────────┬──────────────────┐
+          │                  │               │                  │
+          ▼                  ▼               ▼                  ▼
+      ┌───────┐         ┌──────────┐      ┌─────┐           ┌───────┐
+      │  UX   │         │Frontend  │      │ SRE │           │  Data │
+      └───┬───┘         └────┬─────┘      └──┬──┘           └───┬───┘
+          │                  │               │                  │
+          │                  │               ▼                  │
+          │                  │            Docker                │
+          │                  │               │                  │
+          │            ┌─────┴─────┐         │                  │
+          │            ▼     │     ▼         │                  │
+          │       Backend JS │ Backend PHP   │                  │
+          │            │     │     │         │                  │
+          └────────────┴─────┴─────┴─────────┴──────────────────┘
                              │
                              ▼
                       ┌────────────┐
@@ -1402,11 +1467,9 @@ A possible final ecosystem:
                     └────────────────┘
 ```
 
-The Data Agent is intentionally not drawn here to keep the diagram readable; conceptually it sits beside the backends and owns the data layer (§3.2).
-
 ---
 
-# 27. Final Concept
+## 19. Final Concept
 
 The overall idea can be summarized as:
 
@@ -1415,10 +1478,11 @@ You
  ↓
 Agent Partner
  ↓
+Architect
+ ↓
 Orchestrator
  ↓
 Specialized Agents
- ├── Architect
  ├── UX/UI
  ├── Frontend
  ├── Backend JS
