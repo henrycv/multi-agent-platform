@@ -149,6 +149,63 @@ The Partner is the **main human-facing interface**.
 
 ---
 
+## 3.2 Data / Database Agent
+
+The **Data Agent** owns everything related to persistent data. Without an explicit owner, schema design, migrations, and seed data fall between the backend agents — exactly the kind of fragmentation this architecture tries to avoid.
+
+### Responsibilities
+
+```text
+Database schema design
+Migrations
+Seed / fixture data
+Data modeling (entities, relations)
+Indexes and query performance
+Referential integrity
+Data validation rules at rest
+Backup/restore of application data (with SRE)
+```
+
+### Principle
+
+Backend agents propose data requirements; the Data Agent owns the schema and the migration lifecycle.
+
+> Backend PHP: "Users need a `profiles` table with a unique email."
+
+> Data Agent: "I'll add the migration and the model mapping."
+
+The Data Agent does not own infrastructure (that is SRE) and does not implement business logic (that is the backend agents). It is the single source of truth for the data layer.
+
+---
+
+## 3.3 Minimum Viable Team
+
+Ten agents is the end state, not the starting point. Each additional agent adds token cost and handoff latency. Start with a lean team and grow it as the project demands:
+
+```text
+MVP Team
+ ├── Partner         (product direction)
+ ├── Orchestrator    (planning + delegation + state)
+ ├── Engineer        (frontend + backend implementation)
+ └── QA              (independent verification)
+```
+
+Growth path (add an agent only when it stops being optional):
+
+```text
+Partner, Orchestrator, Engineer, QA
+   ↓  split Engineer → Frontend + Backend
+   ↓  add Architect (technical plans)
+   ↓  add SRE (infrastructure)
+   ↓  add Data (schema / migrations)
+   ↓  add Security (independent review)
+   ↓  add Documentation (knowledge sync)
+```
+
+Rule: **do not add an agent until a single agent has demonstrated it is a bottleneck or a trust boundary.**
+
+---
+
 # 4. Architect Agent
 
 An additional agent proposed during the discussion is the **Architect Agent**.
@@ -223,6 +280,23 @@ Its main role is:
 
 > **Define what the specialists need to implement.**
 
+### Handoff with the Partner
+
+Partner and Architect both make decisions, so define an explicit sign-off boundary to stop them drifting:
+
+```text
+Partner   →  What should we build and why?        (product)
+Architect →  How should the system be structured? (technical)
+           ↓
+Architect presents the plan to the Partner
+           ↓
+Partner confirms it matches the product intent
+           ↓
+Tasks are created
+```
+
+Neither agent may unilaterally change a decision the other has already signed off on without surfacing the change to the human.
+
 ---
 
 # 5. SRE / DevOps Agent
@@ -262,6 +336,22 @@ For example:
 > SRE: "I'll integrate these requirements into the deployment environment."
 
 This creates a clean separation between application code and infrastructure.
+
+### Environment Parity
+
+Keep dev, staging, and production distinct:
+
+```text
+Dev        → agents work here, freely
+Staging    → integration + QA verification, SRE-managed
+Production → no agent touches it directly
+```
+
+Rules:
+
+* Agents operate in the development environment only.
+* Promotion from dev → staging → production is an SRE-only activity.
+* Releases to production always require a human approval (see Human Approval Gates).
 
 ---
 
@@ -344,6 +434,8 @@ Backend Python Agent
 Backend Go Agent
 Backend Rust Agent
 ```
+
+The Data Agent owns schema, migrations, and seed data (§3.2). Backend agents implement business logic against the schema but coordinate any schema change through the Data Agent rather than modifying migrations directly.
 
 ---
 
@@ -675,6 +767,14 @@ fix
 
 This is preferable to passing large conversation histories from one agent to another.
 
+### Versioned Artifacts and State Consistency
+
+Because artifacts are the primary communication channel, keep them consistent:
+
+* **One artifact = one owner.** Each artifact has a designated owning agent; concurrent writers route through that owner or the Orchestrator.
+* **Version artifacts.** Give important artifacts (plans, specs, decisions) a revision history so changes are reviewable.
+* **Orchestrator context rebuild.** The Orchestrator should be able to reconstruct its working context from (a) per-agent summaries and (b) the artifact index — without replaying full conversations. This makes restart cheap and state auditable.
+
 ---
 
 # 15. Agent-Specific Constitutions and Skills
@@ -835,6 +935,37 @@ Conceptually:
                                Documentation
 ```
 
+### Dependency-Aware Backlog
+
+The Orchestrator manages a backlog, not a simple queue. Tasks may have dependencies; a task with unmet dependencies is not dispatched.
+
+```text
+Backlog (ordered by dependency + priority)
+ ├── [ ] SRE: dev environment compose        (blocks everything)
+ ├── [ ] Backend: user model + auth API      (blocks E2E-001)
+ ├── [ ] Frontend: login UI                  (blocks E2E-001)
+ └── [ ] QA: E2E-001 auth flow               (needs the three above)
+```
+
+### Escalation to the Human
+
+Decisions the Orchestrator cannot make locally are escalated. Define the triggers explicitly:
+
+```text
+Ambiguous or contradictory requirements
+Cross-domain conflicts (UX vs Frontend, Backend vs SRE)
+Security findings above a set severity threshold
+Any task that exhausts its budget (see Budgets, Timeouts, and Retries)
+Anything touching production
+```
+
+### Recovery After a Crash
+
+State lives on disk (see Project State), so a crash should not lose work:
+
+* Task records must be **idempotently resumable** — restarting the Orchestrator must not duplicate in-flight work.
+* On restart, the Orchestrator re-reads the artifact index and re-assigns only tasks in `IN_PROGRESS`/`REVIEW` whose owning agent is not still running.
+
 ---
 
 # 17. Project State
@@ -881,6 +1012,33 @@ REVIEW
   ↓
 DONE
 ```
+
+### Definition of Done
+
+Every task carries explicit completion criteria before it is marked `DONE`:
+
+```text
+Unit tests pass
+Integration / E2E tests pass (where applicable)
+QA verified the behavior independently
+No unresolved security findings at or above threshold
+Documentation affected by the change is updated
+```
+
+A task is not `DONE` on the implementer's word alone; the criteria are checked by the Orchestrator and, where applicable, by QA.
+
+### Budgets, Timeouts, and Retries
+
+A task that can run forever can burn unbounded tokens and time. Every task gets a budget:
+
+```text
+max_steps      → hard cap on agent actions
+max_time       → wall-clock timeout
+max_retries    → retry cap on FAILED → REWORK cycles
+cost_budget    → token / cost ceiling
+```
+
+When a budget is exhausted the task moves to `FAILED` with a report, and the Orchestrator escalates to the human. A task exceeding its retry cap is **not automatically re-dispatched** — it signals a deeper problem: a weak agent, bad requirements, or wrong decomposition.
 
 ---
 
@@ -1078,6 +1236,36 @@ Open PR / Request approval
 
 The system can eventually become more autonomous, but the human should remain able to review or reject changes.
 
+### Human Approval Gates
+
+Git is the boundary, but not every merge needs a human. Define which events require explicit human approval:
+
+```text
+Always approve:    schema migrations, dependency version changes,
+                   secrets / config, infrastructure changes,
+                   production releases
+Usually approve:   cross-module refactors, PRs touching many files
+Auto-approve:      small, well-tested changes inside a single module
+                   (only after the team has a proven track record)
+```
+
+The approval matrix should be conservative at first and relaxed only as trust is earned.
+
+### Concurrency and Merge Ownership
+
+Multiple agents working in parallel on one repository will collide. Two rules keep it safe:
+
+* **One active implementer per shared workspace/module**, or
+* **Parallel agents on strictly disjoint modules**, with the Orchestrator as the merge owner.
+
+Branching model (per task) is the default:
+
+```text
+agent/task-123  →  implement + test  →  Orchestrator reviews diff  →  merge to main
+```
+
+Whoever merges is responsible for conflict resolution. When parallel agents touch the same file, merge back through the Orchestrator rather than letting the agents merge directly.
+
 ---
 
 # 23. One Important Architectural Principle
@@ -1097,12 +1285,71 @@ The system should be designed around:
 > **Orchestrator = workflow coordination**
 >
 > **Human = final authority**
+>
+> **Budget = bounded work (time / steps / tokens)**
+>
+> **Definition of Done = explicit completion criteria**
+>
+> **Approval = human-controlled gate**
 
 This gives the system a clean set of abstractions.
 
 ---
 
-# 24. Example Agent Ecosystem
+# 24. Meta-Observability & Learning Loop
+
+The team that monitors the product should also monitor itself. Track per-agent operational metrics so a weak agent is visible before it wastes the whole project:
+
+```text
+Failure rate per agent
+Rework cycles per task (FAILED → REWORK → DONE)
+Cost per task and per agent
+Average completion time per task
+Escalation frequency to the human
+```
+
+### The Learning Loop
+
+The system should get smarter over time. After a `FAILED → REWORK → DONE` cycle, run a lightweight post-mortem and fold the lessons back into the project knowledge:
+
+```text
+What failed?
+Why did it fail?
+What rule would have prevented it?
+Update AGENTS.md / ADRs accordingly
+```
+
+Without this loop the same failure class recurs indefinitely; with it, the team behaves like a real team that reviews its own incidents.
+
+---
+
+# 25. Anti-Patterns
+
+This architecture is not the right tool for every job. Recognize when the overhead of a multi-agent team is a net loss:
+
+```text
+Cross-cutting refactors
+   → one change touching every module; handoff overhead dominates
+
+Tiny one-off tasks
+   → writing a task, dispatching, and collecting the result
+     costs more than the task itself
+
+Live / exploratory iteration
+   → fast human-in-the-loop iteration beats asynchronous delegation
+
+Tightly coupled work
+   → if two agents must constantly coordinate, you have one task, not two
+
+Very small projects
+   → the MVP team already covers it; more agents = more ceremony
+```
+
+When these signals appear, collapse to fewer agents or handle the work in a single session with the Orchestrator.
+
+---
+
+# 26. Example Agent Ecosystem
 
 A possible final ecosystem:
 
@@ -1155,9 +1402,11 @@ A possible final ecosystem:
                     └────────────────┘
 ```
 
+The Data Agent is intentionally not drawn here to keep the diagram readable; conceptually it sits beside the backends and owns the data layer (§3.2).
+
 ---
 
-# 25. Final Concept
+# 27. Final Concept
 
 The overall idea can be summarized as:
 
@@ -1174,6 +1423,7 @@ Specialized Agents
  ├── Frontend
  ├── Backend JS
  ├── Backend PHP
+ ├── Data
  ├── SRE / DevOps
  ├── QA
  ├── Security
@@ -1209,4 +1459,5 @@ The key architectural goal is **specialization without fragmentation**:
 * QA is independent.
 * Infrastructure is separated from application development.
 * Product decisions remain human-guided.
+* Work is bounded by budgets, retries, and human approval gates.
 * The Orchestrator coordinates the whole system.
