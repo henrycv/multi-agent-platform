@@ -1,71 +1,374 @@
 # AI Agent Team for Dockerized Web Projects
 
-## 1. Vision
+## 1. Introduction
 
-The goal is to build a **team of specialized AI agents** that collaborate to implement and maintain a dockerized web project.
+This project aims to create an **AI-native environment for managing and developing an IT product**, designed around a **Human Founder (like you 👤)** who may have a strong product vision but does not necessarily have the experience of a CEO, CTO, Product Manager, Software Architect, or Engineering Manager.
 
-This is **not** a single autonomous coding agent.
+The objective is not simply to create a collection of coding agents.
 
-Instead, the system is composed of multiple agents with **isolated responsibilities, tools, permissions, and skills**, coordinated by an **Orchestrator** and ultimately guided by a human through an **Agent Partner**.
+The objective is to build a **virtual AI organization** that can help transform an initial human idea into a validated product, a coherent technical architecture, and ultimately a working software system.
 
 The main principle is:
 
 > Each agent should have a clearly defined responsibility and should not unnecessarily perform tasks belonging to another agent.
 
-The architecture should allow new agents and skills to be added without redesigning the whole system.
+The **Human Founder** remains at the center of the system, while the **Agent Partner** should behave more like a CTO + Product cofounder.
+
+They provide ideas, goals, context, constraints, questions, and decisions. AI agents provide the specialized knowledge, analysis, planning, coordination, implementation, and verification required to move the project forward.
+
+The system should therefore behave less like an AI coding assistant and more like a **small, highly coordinated technology company whose primary human stakeholder is the Founder**.
 
 ---
 
-## 2. High-Level Architecture
+### Human-in-the-Loop by Design
+
+The system is intended to be **AI-assisted and increasingly autonomous, but not blindly autonomous**.
+
+Agents should be able to independently perform appropriate research, analysis, implementation, testing, and other reversible tasks.
+
+However, **important decisions should remain subject to Human Founder approval**.
+
+Examples include:
+
+- Major changes to product direction.
+- Significant scope changes.
+- Business model decisions.
+- Major technology choices.
+- Major architecture changes.
+- Security-sensitive decisions.
+- Production-impacting actions.
+- Irreversible operations.
+- Decisions involving significant financial or business risk.
+
+The goal is not to remove the Human Founder from the process.
+
+The goal is to allow the Human Founder to operate effectively without personally needing to become an expert in every discipline involved in building a technology company.
+
+---
+
+### The Core Concept
+
+The proposed organization follows this hierarchy:
 
 ```text
                          ┌─────────────────────┐
-                         │   🤝 Agent Partner  │
-                         │ Product / Strategy  │
-                         │ Ideas / Decisions   │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │  Agent Architect    │
-                         │  - System Design    │
-                         │  - Tech Stack & DAG │
-                         │  - Service & Data   │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │   Agent Orchestrator│
+                         │ 👤 HUMAN FOUNDER    │
                          │                     │
-                         │ Plans work          │
-                         │ Delegates tasks     │
-                         │ Tracks state        │
-                         │ Resolves conflicts  │
+                         │ Ideas               │
+                         │ Vision              │
+                         │ Goals               │
+                         │ Questions           │
+                         │ Constraints         │
+                         │ Final Decisions     │
                          └──────────┬──────────┘
                                     │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    🤝 PARTNER       │
+                         │     AI AGENT        │
+                         │                     │
+                         │ Product             │
+                         │ Strategy            │
+                         │ Business            │
+                         │ CTO Advisory        │
+                         │ Decision Support    │
+                         │ Project Planning    │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    🏗️ ARCHITECT     │
+                         │     AI AGENT        │
+                         │                     │
+                         │ System Design       │
+                         │ Technology Stack    │
+                         │ Services & APIs     │
+                         │ Data Architecture   │
+                         │ Security            │
+                         │ Architecture ADRs   │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   🎯 ORCHESTRATOR   │
+                         │     AI AGENT        │
+                         │                     │
+                         │ Plans Work          │
+                         │ Delegates Tasks     │
+                         │ Manages Dependencies│
+                         │ Tracks State        │
+                         │ Coordinates Agents  │
+                         │ Resolves Conflicts  │
+                         └──────────┬──────────┘
+                                    │
+                                    │  (AI AGENT SPECIALISTS)
           ┌─────────────┬───────────┼───────────┬─────────────┬─────────────┐
           │             │           │           │             │             │
           ▼             ▼           ▼           ▼             ▼             ▼
      ┌─────────┐   ┌─────────┐ ┌─────────┐ ┌─────────┐   ┌─────────┐   ┌─────────┐
-     │ UX/UI   │   │Frontend │ │ Backend │ │Backend  │   │  SRE    │   │  Data   │
-     │ Agent   │   │ Agent   │ │ JS      │ │ PHP     │   │  Agent  │   │  Agent  │
+     │  UX/UI  │   │Frontend │ │ Backend │ │ Backend │   │   SRE   │   │  Data   │
+     │  Agent  │   │  Agent  │ │   JS    │ │   PHP   │   │  Agent  │   │  Agent  │
      └────┬────┘   └────┬────┘ └────┬────┘ └────┬────┘   └────┬────┘   └────┬────┘
           │             │           │           │             │             │
           └─────────────┴───────────┴───────────┴─────────────┴─────────────┘
                                     │
                                     ▼
                               ┌────────────┐
-                              │  QA Agent  │
-                              │ Browser /  │
-                              │ E2E / Test │
+                              │  🔎 QA     │
+                              │  AI AGENT  │
+                              │            │
+                              │ Browser    │
+                              │ E2E        │
+                              │ Tests      │
+                              │ Validation │
                               └────────────┘
+```
+
+### From Human Idea to Working Product
+
+The system is intended to support the complete lifecycle of an IT project.
+
+A typical interaction should look like:
+
+```text
+Human Founder
+      │
+      │ "I have an idea..."
+      ▼
+Agent Partner
+      │
+      ├── Understands the idea
+      ├── Asks questions
+      ├── Identifies assumptions
+      ├── Challenges weak points
+      ├── Researches unknowns
+      ├── Evaluates alternatives
+      └── Helps define the desired outcome
+      │
+      ▼
+Human Founder
+      │
+      │ Decision / approval
+      ▼
+Agent Partner
+      │
+      │ Product requirements
+      ▼
+Architect Agent
+      │
+      ├── Designs system
+      ├── Evaluates technology
+      ├── Defines services
+      ├── Defines data architecture
+      └── Documents technical decisions
+      │
+      ▼
+Human Founder
+      │
+      │ Architecture approval
+      ▼
+Orchestrator
+      │
+      ├── Decomposes work
+      ├── Creates tasks
+      ├── Determines dependencies
+      ├── Delegates to specialists
+      └── Coordinates execution
+      │
+      ▼
+Specialized Agents
+      │
+      ├── UX/UI
+      ├── Frontend
+      ├── Backend
+      ├── Data
+      ├── SRE
+      └── Other specialists
+      │
+      ▼
+QA / Review Agents
+      │
+      ├── Automated tests
+      ├── Browser testing
+      ├── Code review
+      ├── Security review
+      └── Requirement validation
+      │
+      ▼
+Human Founder
+      │
+      │ Final acceptance / next decision
+      ▼
+Product Increment
+```
+
+The system should therefore optimize not only for code generation, but for the quality of the entire decision-making and delivery process.
+
+### Company/Project Memory
+
+A central concept of this system is a persistent Project Brain.
+
+Agents should not depend exclusively on conversation history or their own temporary context.
+
+Important knowledge should be captured as persistent project artifacts, including:
+
+- Product vision.
+- Business objectives.
+- User personas.
+- Requirements.
+- Assumptions.
+- Market research.
+- Competitor analysis.
+- Product roadmap.
+- Architecture.
+- Architecture Decision Records (ADRs).
+- Technical constraints.
+- Security requirements.
+- Development standards.
+- Current backlog.
+- Milestones.
+- Agent responsibilities.
+- Important decisions.
+- Open questions.
+- Known risks.
+
+This allows every agent to operate from a common understanding of the project.
+
+The Project Brain becomes the project's shared organizational memory.
+
+Every agent should be able to consult this.
+
+Otherwise your agents will gradually develop different interpretations of what you're building.
+
+```text
+                    📚 PROJECT BRAIN
+                         │
+       ┌─────────────────┼─────────────────┐
+       ▼                 ▼                 ▼
+   Product              Tech              Business
+   Vision               Architecture      Market
+   Personas             ADRs              Pricing
+   Requirements         APIs              Competitors
+   Roadmap              Data model        Decisions
+   Constraints           Security          Metrics
+```
+
+---
+
+## 2. The Human Founder (You)
+
+The **Human Founder** is the owner and ultimate decision-maker of the project.
+
+The Human Founder does not need to have expertise in product management, software architecture, engineering, business strategy, or project management. The purpose of the Agent Partner is specifically to compensate for those gaps while keeping the Human Founder in control.
+
+### Responsibilities
+
+The Human Founder:
+
+- Provides the original ideas, goals, context, constraints, and priorities.
+- Describes problems, opportunities, doubts, and desired outcomes in natural language.
+- Makes the final decisions when business, product, financial, ethical, or strategic judgment is required.
+- Approves or rejects important product and architectural decisions.
+- Provides clarification when the Agent Partner identifies missing information.
+- Defines personal or business constraints that agents cannot infer reliably.
+- Reviews important proposals before irreversible actions are taken.
+- Owns the vision, business risk, intellectual property, and final responsibility for the project.
+
+### What the Human Founder does NOT need to do
+
+The Human Founder should not be expected to:
+
+- Know how to design the complete software architecture.
+- Know which technologies should be selected.
+- Know how to decompose a complex system into engineering tasks.
+- Know how to manage multiple specialized coding agents.
+- Know how to write detailed technical specifications.
+- Understand every implementation detail.
+- Personally coordinate every development task.
+
+The Human Founder should be able to say:
+
+> "I have this idea. Help me understand whether it makes sense, what I am missing, and what we should do next."
+
+The AI system should transform that input into structured decisions, plans, and executable work while keeping the Human Founder informed and in control.
+
+---
+
+## 3. High-Level Architecture
+
+```text
+
+                👤 Human Founder
+                          │
+                          │ ideas / questions /
+                          │ decisions / approval
+                          ▼
+              ┌──────────────────────────┐
+              │ 🤝 AGENT PARTNER          │
+              │                           │
+              │ Product Manager           │
+              │ Startup Advisor           │
+              │ CTO Advisor               │
+              │ Business Analyst          │
+              │ Decision Facilitator      │
+              │                           │
+              │ "What should we build?"   │
+              │ "Why?"                    │
+              │ "Is it viable?"           │
+              │ "What do we do next?"     │
+              └────────────┬─────────────┘
+                           │
+                           ▼
+              ┌──────────────────────────┐
+              │   🏗️ AGENT ARCHITECT     │
+              │                           │
+              │ System architecture       │
+              │ Technology choices        │
+              │ APIs / data / services     │
+              │ Security / scalability     │
+              │ Architecture decisions     │
+              └────────────┬─────────────┘
+                           │
+                           ▼
+              ┌──────────────────────────┐
+              │  🎯 AGENT ORCHESTRATOR   │
+              │                           │
+              │ Break down work           │
+              │ Assign specialists        │
+              │ Manage dependencies       │
+              │ Track progress            │
+              │ Request reviews            │
+              │ Escalate problems         │
+              └────────────┬─────────────┘
+                           │
+                           │  (AI AGENT SPECIALISTS)
+       ┌──────────┬────────┼────────┬──────────┬──────────┐
+       ▼          ▼        ▼        ▼          ▼          ▼
+     UX/UI    Frontend   Backend   Backend    Data       SRE
+                          JS       PHP
+       │          │        │        │          │          │
+       └──────────┴────────┴────────┴──────────┴──────────┘
+                          │
+                          ▼
+                 ┌────────────────┐
+                 │   🔎 AGENT QA  │
+                 │    / REVIEW    │
+                 │                │
+                 │ E2E            │
+                 │ Browser        │
+                 │ Security       │
+                 │ Regression     │
+                 └────────────────┘
+                          │
+                          ▼
+                   HUMAN APPROVAL
 ```
 
 A refined architecture is:
 
 ```text
                     ┌───────────────┐
-                    │      YOU      │
+                    │ HUMAN FOUNDER │
                     └───────┬───────┘
                             │
                             ▼
@@ -86,7 +389,7 @@ A refined architecture is:
       ┌─────────┼───────────┼─────────────────────────┐
       │         │           │                         │
       ▼         ▼           ▼                         ▼
-      UX         DATA     ENGINEERING                 QA
+      UX      DATA       ENGINEERING                 QA
       │         │           │                         │
       │         │   ┌───────┼────────┐                │
       │         │   │       │        │                │
@@ -98,8 +401,10 @@ A refined architecture is:
       │         │      JS       PHP                   │
       │         │                                     │
       └─────────┴───────────┬─────────────────────────┘
+                            |
                             ▼
                         PRODUCT
+
 ```
 
 ---
@@ -134,52 +439,245 @@ Rule: **do not add an agent until a single agent has demonstrated it is a bottle
 
 ---
 
-## 3. Agents
+## 4. Agents
 
-### 3.1 Agent Partner
+### 4.1 Agent Partner
 
-The **Agent Partner** is the primary human-facing agent.
+The **Agent Partner** is the primary AI interface between the Human Founder and the multi-agent project team.
 
-It does **not** primarily code or perform SRE tasks.
+Think the Agent Partner has 5 internal hats. You don't necessarily need five separate agents. 
 
-### Responsibilities
+**Initially** you can just make one Agent Partner with five modes:
 
-* Understand the product
-* Understand business goals
-* Brainstorm ideas
-* Explore requirements
-* Discuss trade-offs
-* Help make decisions
-* Maintain conceptual understanding of the project
-* Discuss architecture at a conceptual level
-* Help define roadmap
-* Determine what needs to happen next
+#### A. 🤝 Partner
 
-### Example
+Your default conversational interface.
 
-User:
+> "Let's think about this."
 
-> "I want to build a SaaS platform where users can create projects."
+#### B. 🧭 Product Manager
 
-Partner:
+Turns ideas into:
 
-> "We could structure the product around organizations, projects, members, and roles. A first MVP could include authentication, project creation, dashboard, and invitations."
+- problems
+- users
+- requirements
+- user stories
+- MVP
+- roadmap
+- priorities
 
-The Partner can recommend technologies:
+#### C. 💼 Business Analyst
 
-> "Laravel could be a good backend choice because..."
+Challenges:
 
-But it does not necessarily implement Laravel itself.
+- market assumptions
+- competitors
+- pricing
+- business model
+- validation strategy
+- risks
 
-Its role is essentially:
+#### D. 🏗️ CTO Advisor
 
-> **What should we build, and why?**
+Answers:
 
-The Partner is the **main human-facing interface**.
+- architecture
+- technology selection
+- scalability
+- security
+- integrations
+- technical debt
+
+#### E. 🎯 Program Manager
+
+Turns decisions into:
+
+- epics
+- tasks
+- dependencies
+- milestones
+- agent assignments
+- acceptance criteria
+
+This is important because you don't need to understand the distinction between all these roles.
+
+You talk to one person:
+
+> "I think we should add X."
+
+The Partner decides which "hat" is needed.
+
+The Agent Partner is **not simply a chatbot and not primarily a coding agent**.
+
+Its primary responsibility is to help the Human Founder **think, decide, plan, and coordinate**.
+
+The Agent Partner should understand the project's current state and continuously help answer:
+
+> **What are we trying to achieve?**
+
+> **Why are we doing it?**
+
+> **What assumptions are we making?**
+
+> **What do we know and what do we not know?**
+
+> **What should we do next?**
+
+> **Who or what should do that work?**
+
+> **How do we know the result is good enough?**
 
 ---
 
-### 3.2. Architect Agent
+### Responsibilities
+
+#### A. Understand the Human Founder
+
+The Agent Partner translates informal human input into structured project information.
+
+For example:
+
+> "I think restaurants could use AI to predict how much food they need."
+
+The Agent Partner should not immediately create implementation tasks.
+
+Instead, it should identify:
+
+- The underlying problem.
+- Potential users and customers.
+- Business assumptions.
+- Unclear requirements.
+- Risks.
+- Questions requiring clarification.
+- Opportunities for validation.
+- Possible MVP boundaries.
+
+---
+
+#### B. Challenge Ideas Constructively
+
+The Agent Partner should not blindly agree with the Human Founder.
+
+It should respectfully challenge assumptions and identify:
+
+- Contradictions.
+- Missing information.
+- Unrealistic expectations.
+- Technical risks.
+- Business risks.
+- Excessive scope.
+- Unvalidated assumptions.
+- Alternative approaches.
+- Potentially simpler solutions.
+
+The objective is **not to win an argument**.
+
+The objective is to improve the quality of decisions.
+
+The Agent Partner should be comfortable saying:
+
+> "I don't think we have enough information to make this decision yet."
+
+or:
+
+> "I recommend validating this assumption before we spend development effort."
+
+---
+
+#### C. Convert Ideas into Structured Product Decisions
+
+The Agent Partner transforms validated ideas into artifacts such as:
+
+- Product vision.
+- Problem statements.
+- Personas.
+- User journeys.
+- Requirements.
+- User stories.
+- Acceptance criteria.
+- MVP definition.
+- Product roadmap.
+- Priorities.
+- Risks.
+- Assumptions.
+- Validation experiments.
+
+The Agent Partner should distinguish clearly between:
+
+**Fact**
+
+Information supported by evidence.
+
+**Assumption**
+
+Something believed to be true but not yet validated.
+
+**Decision**
+
+A deliberate choice approved by the Human Founder.
+
+**Proposal**
+
+A recommendation that has not yet been approved.
+
+**Task**
+
+An executable piece of work resulting from an approved decision.
+
+---
+
+### Strategic Decision Support
+
+The Agent Partner helps the Human Founder evaluate alternatives.
+
+For significant decisions it should present:
+
+1. The problem.
+2. Relevant context.
+3. Available options.
+4. Advantages and disadvantages.
+5. Risks.
+6. Cost/complexity implications.
+7. Recommendation.
+8. Confidence level.
+9. Information still missing.
+10. Whether Human Founder approval is required.
+
+The Agent Partner should avoid presenting its recommendation as an unquestionable fact.
+
+The Human Founder remains the final authority.
+
+---
+
+### Coordination with Specialized Agents
+
+The Agent Partner does not necessarily execute every task itself.
+
+When appropriate, it delegates work to specialized agents such as:
+
+- Architecture Agent
+- UX/UI Agent
+- Frontend Agent
+- Backend Agent
+- Data Agent
+- SRE/DevOps Agent
+- Security Agent
+- QA Agent
+- Research Agent
+
+The Agent Partner is responsible for ensuring that delegated work is consistent with the project's approved:
+
+- Vision.
+- Requirements.
+- Architecture.
+- Constraints.
+- Decisions.
+- Roadmap.
+
+---
+
+### 4.2. Architect Agent
 
 An additional agent proposed during the discussion is the **Architect Agent**.
 
@@ -258,6 +756,7 @@ Its main role is:
 Partner and Architect both make decisions, so define an explicit sign-off boundary to stop them drifting:
 
 ```text
+Human     →  Have an initial Idea                 (idea)
 Partner   →  What should we build and why?        (product)
 Architect →  How should the system be structured? (technical)
            ↓
@@ -270,9 +769,50 @@ Tasks are created
 
 Neither agent may unilaterally change a decision the other has already signed off on without surfacing the change to the human.
 
+The Partner should say:
+
+> "This is now sufficiently defined. We need architecture."
+
+Then:
+
+```text
+Human Founder
+      │
+      │ Partner Validation Request
+      ▼
+Agent Partner
+      │
+      │ Architecture Request
+      ▼
+Architecture Agent
+      │
+      ├── evaluates options
+      ├── identifies constraints
+      ├── creates ADR
+      ├── proposes stack
+      ├── designs services
+      └── identifies dependencies
+             │
+             ▼
+        Agent Partner
+             │
+             │ "Here is the architecture.
+             │  Do you approve?"
+             ▼
+        Human Founder
+```
+
+That human approval gate is extremely important.
+
+You shouldn't allow an autonomous agent to silently decide:
+
+>"We're now going to build 17 microservices with Kubernetes."
+
+😂
+
 ---
 
-### 3.3. Orchestrator Agent
+### 4.3. Orchestrator Agent
 
 The **Orchestrator Agent** is the workflow coordinator of the team. It is the agent that plans, assigns, and tracks work across all specialists — and the one that merges the results back together.
 
@@ -312,7 +852,7 @@ The Orchestrator's full behavior — backlog, escalation, and crash recovery —
 
 ---
 
-### 3.4 SRE / DevOps Agent
+### 4.4 SRE / DevOps Agent
 
 The **SRE Agent** owns infrastructure and deployment concerns.
 
@@ -368,7 +908,7 @@ Rules:
 
 ---
 
-### 3.5 Data / Database Agent
+### 4.5 Data / Database Agent
 
 The **Data Agent** owns everything related to persistent data. Without an explicit owner, schema design, migrations, and seed data fall between the backend agents — exactly the kind of fragmentation this architecture tries to avoid.
 
@@ -397,7 +937,7 @@ The Data Agent does not own infrastructure (that is SRE) and does not implement 
 
 ---
 
-### 3.6. UX Agent
+### 4.6. UX Agent
 
 The **UX/UI Agent** owns product interaction and visual design.
 
@@ -441,7 +981,7 @@ The Frontend Agent implements it.
 
 ---
 
-### 3.7. Backend JS Agent
+### 4.7. Backend JS Agent
 
 The **Backend JS Agent** owns server-side JavaScript and TypeScript implementation.
 
@@ -487,7 +1027,7 @@ The Backend JS Agent should not normally modify Docker infrastructure unless exp
 
 ---
 
-### 3.8. Backend PHP Agent
+### 4.8. Backend PHP Agent
 
 The **Backend PHP Agent** owns PHP application development.
 
@@ -525,7 +1065,7 @@ The Data Agent owns schema, migrations, and seed data (§3.5). Backend agents im
 
 ---
 
-### 3.9. Frontend Agent
+### 4.9. Frontend Agent
 
 The **Frontend Agent** owns frontend implementation.
 
@@ -570,7 +1110,7 @@ This creates a clean division.
 
 ---
 
-### 3.10. QA Agent
+### 4.10. QA Agent
 
 The **QA Agent** is responsible for independent verification.
 
@@ -650,7 +1190,7 @@ The responsible implementation agent then fixes the problem.
 
 ---
 
-### 3.11. Security Agent
+### 4.11. Security Agent
 
 A Security Agent was also proposed as a useful additional specialization.
 
@@ -678,7 +1218,7 @@ This provides an independent security verification layer.
 
 ---
 
-### 3.12. Documentation Agent
+### 4.12. Documentation Agent
 
 A Documentation Agent can own project knowledge that must remain synchronized with the implementation.
 
@@ -698,7 +1238,7 @@ The Documentation Agent observes the work performed by other agents and updates 
 
 ---
 
-## 4. Agent vs. Skill
+## 5. Agent vs. Skill
 
 An important architectural refinement is to distinguish between:
 
@@ -752,7 +1292,7 @@ Agents can still remain distinct when they require different:
 
 ---
 
-## 5. Shared Project Knowledge
+## 6. Shared Project Knowledge
 
 Agents should not primarily communicate through huge conversational exchanges.
 
@@ -809,7 +1349,7 @@ fix
 
 This is preferable to passing large conversation histories from one agent to another.
 
-## 6. Versioned Artifacts and State Consistency
+## 7. Versioned Artifacts and State Consistency
 
 Because artifacts are the primary communication channel, keep them consistent:
 
@@ -819,7 +1359,7 @@ Because artifacts are the primary communication channel, keep them consistent:
 
 ---
 
-## 7. Agent-Specific Constitutions and Skills
+## 8. Agent-Specific Constitutions and Skills
 
 Each agent should have its own instructions and capabilities.
 
@@ -924,7 +1464,7 @@ This gives the overall system a **plugin-like architecture**.
 
 ---
 
-## 8. The Orchestrator
+## 9. The Orchestrator
 
 The **Orchestrator** is the key component.
 
@@ -1026,7 +1566,7 @@ State lives on disk (see Project State), so a crash should not lose work:
 
 ---
 
-## 9. Project State
+## 10. Project State
 
 The system should maintain explicit task/project state instead of relying only on conversation context.
 
@@ -1100,7 +1640,7 @@ When a budget is exhausted the task moves to `FAILED` with a report, and the Orc
 
 ---
 
-## 10. Agent Communication
+## 11. Agent Communication
 
 Agents should communicate primarily through:
 
@@ -1141,7 +1681,7 @@ Technical tasks
 
 ---
 
-## 11. Separation of Responsibilities
+## 12. Separation of Responsibilities
 
 A core principle is that agents should have **isolated responsibilities**.
 
@@ -1191,7 +1731,7 @@ This separation helps prevent one agent from becoming an uncontrolled "do everyt
 
 ---
 
-## 12. QA Feedback Loop
+## 13. QA Feedback Loop
 
 The QA feedback loop is especially important.
 
@@ -1228,7 +1768,7 @@ The same model should not be the only authority evaluating its own implementatio
 
 ---
 
-## 13. Docker / SRE Feedback Loop
+## 14. Docker / SRE Feedback Loop
 
 The infrastructure workflow can similarly be automated:
 
@@ -1262,7 +1802,7 @@ This creates an iterative engineering environment rather than simple code genera
 
 ---
 
-## 14. Git as a Safety Boundary
+## 15. Git as a Safety Boundary
 
 Git should provide a strong boundary around autonomous changes.
 
@@ -1326,7 +1866,7 @@ Whoever merges is responsible for conflict resolution. When parallel agents touc
 
 ---
 
-## 15. One Important Architectural Principle
+## 16. One Important Architectural Principle
 
 The system should be designed around:
 
@@ -1354,7 +1894,7 @@ This gives the system a clean set of abstractions.
 
 ---
 
-## 16. Meta-Observability & Learning Loop
+## 17. Meta-Observability & Learning Loop
 
 The team that monitors the product should also monitor itself. Track per-agent operational metrics so a weak agent is visible before it wastes the whole project:
 
@@ -1381,7 +1921,7 @@ Without this loop the same failure class recurs indefinitely; with it, the team 
 
 ---
 
-## 17. Anti-Patterns
+## 18. Anti-Patterns
 
 This architecture is not the right tool for every job. Recognize when the overhead of a multi-agent team is a net loss:
 
@@ -1407,13 +1947,13 @@ When these signals appear, collapse to fewer agents or handle the work in a sing
 
 ---
 
-## 18. Example Agent Ecosystem
+## 19. Example Agent Ecosystem
 
 A possible final ecosystem:
 
 ```text
                     ┌─────────────────┐
-                    │       YOU       │
+                    │  HUMAN FOUNDER  │
                     └────────┬────────┘
                              │
                              ▼
@@ -1469,7 +2009,7 @@ A possible final ecosystem:
 
 ---
 
-## 19. Final Concept
+## 20. Final Concept
 
 The overall idea can be summarized as:
 
@@ -1525,3 +2065,30 @@ The key architectural goal is **specialization without fragmentation**:
 * Product decisions remain human-guided.
 * Work is bounded by budgets, retries, and human approval gates.
 * The Orchestrator coordinates the whole system.
+
+---
+## 21. Guiding Philosophy
+
+The system should follow a simple principle:
+
+> **The Human Founder decides what and why. The AI organization helps determine how, coordinates the work, executes it, and verifies the result.**
+
+The system should favor:
+
+* Clarity over complexity.
+* Evidence over assumptions.
+* Validation before implementation.
+* Small incremental steps.
+* Explicit decisions.
+* Persistent knowledge.
+* Clear responsibilities.
+* Constructive disagreement.
+* Human approval at important decision points.
+* Specialized agents where specialization provides real value.
+* Automation of repetitive execution and coordination.
+
+The ultimate goal is to create an **AI-native project organization that amplifies a human founder**, allowing a person with an idea and limited experience in technology management to operate with the support of a coordinated virtual product, architecture, engineering, and quality organization.
+
+This project is therefore not primarily about building more agents.
+
+It is about building a **coherent system in which humans and specialized AI agents can work together as an organization**.
